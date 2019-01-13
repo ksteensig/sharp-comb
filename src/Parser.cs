@@ -31,8 +31,10 @@ namespace MonadicParserCombinator
             !i.AtEnd
             ? Result<char>.Success(i.Current, i.Next())
             : Result<char>.Failure(i, "End of input");
-
+        
         public static Func<char, Parser<char>> Char = c => Any.Where(result => result == c);
+
+        public static Func<char, Parser<char>> NotChar = c => Any.Where(result => result != c);
 
         public static Parser<char> Digit = Any.Where(result => char.IsDigit(result));
 
@@ -40,13 +42,47 @@ namespace MonadicParserCombinator
             from chars in p
             select string.Concat(chars.ToArray());
             
-
         public static Parser<IEnumerable<char>> Integer = Digit.ManyOne();
         public static Parser<IEnumerable<char>> Decimal = 
             from first in Digit.ManyOne()
             from dot in Char('.')
             from second in Digit.ManyOne()
             select first.Append(dot).Concat(second);
+
+        public static Parser<IEnumerable<char>> CharSequence(string s) => i =>
+        {
+            var results = new List<char>();
+            var result = Parser.Char(s[0])(i);
+
+            for (int j = 1; j < s.Length; j++)
+            {
+                if (result.IsSuccess)
+                {
+                    results.Add(result.Value);
+                    result = Parser.Char(s[j])(i);
+                }
+                else
+                {
+                    return Result<IEnumerable<char>>.Failure(i, "Didn't match the char sequence");
+                }
+            }
+
+            return Result<IEnumerable<char>>.Success(results.AsEnumerable(), result.Remainder);
+        };
+
+        public static Parser<IEnumerable<char>> UntilFalse(Func<char, bool> predicate) => i =>
+        {
+            var results = new List<char>();
+            var result = Any(i);
+
+            while (result.IsSuccess && predicate(result.Value))
+            {
+                results.Add(result.Value);
+                result = Any(i);
+            }
+
+            return Result<IEnumerable<char>>.Success(results.AsEnumerable(), result.Remainder);
+        };
 
         public static Parser<IEnumerable<T>> Many<T>(this Parser<T> p) => i =>
         {
