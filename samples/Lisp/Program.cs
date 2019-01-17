@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using MonadicParserCombinator;
 
 namespace MonadicParserCombinator.Samples.Lisp
 {
@@ -6,11 +8,12 @@ namespace MonadicParserCombinator.Samples.Lisp
     {
         static void Main(string[] args)
         {
-            var prog = Parser.TryParse(LispParser.ListParser, "(define x (+ 1 1))");
+            var prog = Parser.TryParse(LispParser.LispProgramParser, "(define xx (+ 1 1))");
 
             Console.WriteLine(prog.IsSuccess);
-
-            Console.WriteLine("Hello World!");
+            Console.WriteLine(prog.Value.GetType());
+            //Console.WriteLine(prog.Remainder.Current);
+            //Console.WriteLine(prog.Remainder.Position);
         }
     }
 }

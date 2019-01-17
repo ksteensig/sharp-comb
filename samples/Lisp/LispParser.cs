@@ -23,14 +23,17 @@ namespace MonadicParserCombinator.Samples.Lisp
     public class LispList : LispExpression
     {
 
-        LispExpression head;
-        LispExpression tail;
+        IEnumerable<LispExpression> expressions;
         
-        public LispList(LispExpression head, LispExpression tail)
+        public LispList(IEnumerable<LispExpression> expr)
         {
-            this.head = head;
-            this.tail = tail;
+            this.expressions = expr;
         }
+    }
+
+    public class EmptyLispList : LispExpression
+    {
+
     }
 
     public class LispTerm : LispAtomic
@@ -79,68 +82,82 @@ namespace MonadicParserCombinator.Samples.Lisp
 
     public static class LispParser
     {
-        
-        public static Parser<LispExpression> TermParser =
+
+        static Parser<char> Space =
+            from s in Parser.Char(' ')
+            select s;
+
+        static Parser<string> Spaces =
+            from s in Space.ManyOne().Text()
+            select s;
+
+        static Parser<char> LeftParen =
+            from lp in Parser.Char('(')
+            select lp;
+
+        static Parser<char> RightParen =
+            from rp in Parser.Char(')')
+            select rp;
+
+        static Parser<char> Newline =
+            from nl in Parser.Char(')')
+            select nl;
+
+        static Parser<LispExpression> TermParser =
             from x in Parser.Integer.Text()
             select (LispExpression)new LispTerm(int.Parse(x));
 
-        public static Parser<LispExpression> DefineParser =
+        static Parser<LispExpression> SymbolParser =
+            from x in Parser.WhileTrue(c => c != '(' && c != ')' && c != '\0' && c != ' ').Text()
+            select (LispExpression)new LispSymbol(x);
+
+        static Parser<LispExpression> DefineParser =
             from define in Parser.CharSequence("define")
-            from s1     in Parser.Char(' ').ManyOne()
-            from pl     in Parser.Char('(')
-            from n      in Parser.UntilFalse(c => c != ')').Text()
-            from pr     in Parser.Char(')')
-            from s2     in Parser.Char(' ').ManyOne()
-            from ple    in Parser.Char('(')
+            from s1     in Space
+            from n      in SymbolParser
+            from s2     in Space
             from expr   in ListParserInner
-            from pre    in Parser.Char(')')
-            select (LispExpression)new LispDefine(new LispSymbol(n), expr);
+            select (LispExpression)new LispDefine((LispSymbol)n, expr);
         
-        public static Parser<LispExpression> LambdaParser =
-            from lambda in Parser.CharSequence("lambda")
-            from s1     in Parser.Char(' ').ManyOne()
-            from pl     in Parser.Char('(')
-            from n      in Parser.UntilFalse(c => c != ')').Text()
-            from pr     in Parser.Char(')')
-            from s2     in Parser.Char(' ').ManyOne()
-            from ple    in Parser.Char('(')
+        static Parser<LispExpression> LambdaParser =
+            from define in Parser.CharSequence("lambda")
+            from s1     in Space
+            from n      in SymbolParser
+            from s2     in Space
             from expr   in ListParserInner
-            from pre    in Parser.Char(')')
-            select (LispExpression)new LispLambda(new LispSymbol(n), expr);
+            select (LispExpression)new LispLambda((LispSymbol)n, expr);
 
-        public static Parser<LispExpression> EmptyListParser =
-            from pl in Parser.Char('(')
-            from pr in Parser.Char('(')
-            select (LispExpression)new LispExpression();
+        static Parser<LispExpression> EmptyListParser =
+            from lp in LeftParen
+            from ss in Space.Many()
+            from rp in RightParen
+            select (LispExpression)new EmptyLispList();
 
-        public static Parser<LispExpression> ListParserInner =
-            from pl in Parser.Char('(')
-            from s1 in Parser.Char(' ').ManyOne()
-            from t1 in Parser.EitherOf(new List<Parser<LispExpression>>(
-                    new Parser<LispExpression>[]{
-                        DefineParser, LambdaParser, TermParser, ListParserInner}))
-            from s2 in Parser.Char(' ').ManyOne()
-            from t2 in Parser.EitherOf(new List<Parser<LispExpression>>(
-                    new Parser<LispExpression>[]{
-                        EmptyListParser, ListParserInner}))
-            from s3 in Parser.Char(' ').Many()
-            from n  in Parser.Char('\n').Many()
-            from pr in Parser.Char(')')
-            select (LispExpression)new LispList(t1, t2);
+        static Parser<LispExpression> ListParserInner =
+            from lp in LeftParen
+            from s1 in Space.Many()
+            from expr in Parser.SeperatedBy<LispExpression, IEnumerable<char>>(
+                            Parser.EitherOf(new List<Parser<LispExpression>>(
+                                new Parser<LispExpression>[]{
+                                    EmptyListParser, TermParser,
+                                    SymbolParser, ListParser})), Space.ManyOne())
+                                    
+            from s2 in Space.Many()
+            from rp in RightParen
+            select (LispExpression)new LispList(expr);
 
-        public static Parser<LispExpression> ListParser =
-            from pl in Parser.Char('(')
-            from s1 in Parser.Char(' ').ManyOne()
-            from t1 in Parser.EitherOf(new List<Parser<LispExpression>>(
-                    new Parser<LispExpression>[]{
-                        DefineParser, LambdaParser, TermParser, ListParserInner}))
-            from s2 in Parser.Char(' ').ManyOne()
-            from t2 in Parser.EitherOf(new List<Parser<LispExpression>>(
-                    new Parser<LispExpression>[]{
-                        EmptyListParser, ListParserInner}))
-            from s3 in Parser.Char(' ').Many()
-            from n  in Parser.Char('\n').Many()
-            from pr in Parser.Char(')').EndOfInput()
-            select (LispExpression)new LispList(t1, t2);
+        static Parser<LispExpression> ListParser =
+            from lp   in LeftParen
+            from s1   in Space.Many()
+            from expr in Parser.EitherOf(new List<Parser<LispExpression>>(
+                            new Parser<LispExpression>[]{
+                                DefineParser, LambdaParser,
+                                EmptyListParser, TermParser,
+                                SymbolParser, ListParser}))
+            from s2   in Space.Many()
+            from rp   in RightParen
+            select expr;
+
+        public static Parser<LispExpression> LispProgramParser = ListParser.EndOfInput<LispExpression>();
     }
 }
