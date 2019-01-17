@@ -52,14 +52,16 @@ namespace MonadicParserCombinator
         public static Parser<IEnumerable<char>> CharSequence(string s) => i =>
         {
             var results = new List<char>();
-            var result = Parser.Char(s[0])(i);
+            Result<char> result = Parser.Char(s[0])(i);
+
+            Input remainder = i;
 
             for (int j = 1; j < s.Length; j++)
             {
                 if (result.IsSuccess)
                 {
                     results.Add(result.Value);
-                    result = Parser.Char(s[j])(i);
+                    result = Parser.Char(s[j])(result.Remainder);
                 }
                 else
                 {
@@ -67,33 +69,57 @@ namespace MonadicParserCombinator
                 }
             }
 
-            return Result<IEnumerable<char>>.Success(results.AsEnumerable(), result.Remainder);
+            if (result.IsSuccess)
+            {
+                return Result<IEnumerable<char>>.Success(results.AsEnumerable(), result.Remainder); 
+            }
+            else
+            {
+                return Result<IEnumerable<char>>.Failure(i, "Didn't match the char sequence");
+            }
         };
 
-        public static Parser<IEnumerable<char>> UntilFalse(Func<char, bool> predicate) => i =>
+        public static Parser<IEnumerable<char>> WhileTrue(Func<char, bool> predicate) => i =>
         {
             var results = new List<char>();
             var result = Any(i);
 
+            Input remainder = i;
+
             while (result.IsSuccess && predicate(result.Value))
             {
+                remainder = result.Remainder;
+
                 results.Add(result.Value);
-                result = Any(i);
+                result = Any(result.Remainder);         
             }
 
-            return Result<IEnumerable<char>>.Success(results.AsEnumerable(), result.Remainder);
+            if (results.Any())
+            {
+                return Result<IEnumerable<char>>.Success(results.AsEnumerable(), remainder);
+            }
+            else
+            {
+                return Result<IEnumerable<char>>.Failure(i, "Nothing matched the predicate");
+            }
         };
 
         public static Parser<IEnumerable<T>> Many<T>(this Parser<T> p) => i =>
         {
-               var results = new List<T>();
-               var result = p(i);
-               while (result.IsSuccess)
-               {
-                   results.Add(result.Value);
-                   result = p(result.Remainder);
-               }
-               return Result<IEnumerable<T>>.Success(results.AsEnumerable(), result.Remainder);
+            var results = new List<T>();
+            var result = p(i);
+
+            Input remainder = i;
+
+            while (result.IsSuccess)
+            {
+                remainder = result.Remainder;
+
+                results.Add(result.Value);
+                result = p(result.Remainder);
+            }
+            
+            return Result<IEnumerable<T>>.Success(results.AsEnumerable(), remainder);
         };
 
         public static Parser<IEnumerable<T>> ManyOne<T>(this Parser<T> p) => i =>
