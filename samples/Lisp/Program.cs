@@ -8,10 +8,17 @@ namespace MonadicParserCombinator.Samples.Lisp
     {
         static void Main(string[] args)
         {
-            var prog = Parser.TryParse(LispParser.LispProgramParser, "(define xx (+ 1 1))");
+            var prog = Parser.TryParse(LispParser.LispProgramParser, "((define xx (+ 1 1)))");
 
-            Console.WriteLine(prog.IsSuccess);
-            Console.WriteLine(prog.Value.GetType());
+            //Console.WriteLine(prog.IsSuccess);
+
+            var printer = new LispPrettyPrinter();
+
+            foreach (var e in prog.Value)
+            {
+                e.Accept(printer);
+            }
+
             //Console.WriteLine(prog.Remainder.Current);
             //Console.WriteLine(prog.Remainder.Position);
         }

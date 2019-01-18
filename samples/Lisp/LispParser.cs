@@ -5,84 +5,101 @@ using MonadicParserCombinator;
 
 namespace MonadicParserCombinator.Samples.Lisp
 {
-    public class LispExpression
+    public abstract class LispExpression
     {
-
-    }
-
-    public class LispAtomic : LispExpression
-    {
-
-    }
-
-    public class EmptyListList : LispExpression
-    {
-
+        public abstract void Accept(IVisitor visitor);
     }
 
     public class LispList : LispExpression
     {
 
-        IEnumerable<LispExpression> expressions;
+        public IEnumerable<LispExpression> expressions;
         
         public LispList(IEnumerable<LispExpression> expr)
         {
             this.expressions = expr;
         }
+
+        public override void Accept(IVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
     }
 
     public class EmptyLispList : LispExpression
     {
-
-    }
-
-    public class LispTerm : LispAtomic
-    {
-        int x;
-
-        public LispTerm(int term)
+        public override void Accept(IVisitor visitor)
         {
-            this.x = term;
+            visitor.Visit(this);
         }
     }
 
-    public class LispSymbol : LispAtomic
+    public class LispTerm : LispExpression
     {
-        string symbol;
+        public int value;
+
+        public LispTerm(int term)
+        {
+            this.value = term;
+        }
+
+        public override void Accept(IVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+    }
+
+    public class LispSymbol : LispExpression
+    {
+        public string symbol;
 
         public LispSymbol(string symbol)
         {
             this.symbol = symbol;
         }
+
+        public override void Accept(IVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
     }
 
     public class LispDefine : LispExpression
     {
-        LispSymbol variable;
-        LispExpression expression;
+        public LispSymbol parameter;
+        public LispExpression expression;
 
-        public LispDefine(LispSymbol var, LispExpression expr)
+        public LispDefine(LispSymbol par, LispExpression expr)
         {
-            this.variable = var;
+            this.parameter = par;
             this.expression = expr;
+        }
+
+        public override void Accept(IVisitor visitor)
+        {
+            visitor.Visit(this);
         }
     }
 
     public class LispLambda : LispExpression
     {
-        LispSymbol parameter;
-        LispExpression expression;
+        public LispSymbol parameter;
+        public LispExpression expression;
 
         public LispLambda(LispSymbol par, LispExpression expr)
         {
             this.parameter = par;
             this.expression = expr;
         }
+
+        public override void Accept(IVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
     }
 
     public static class LispParser
     {
-
         static Parser<char> Space =
             from s in Parser.Char(' ')
             select s;
@@ -156,8 +173,8 @@ namespace MonadicParserCombinator.Samples.Lisp
                                 SymbolParser, ListParser}))
             from s2   in Space.Many()
             from rp   in RightParen
-            select expr;
+            select (LispExpression)new LispList(expr.ReturnIEnumerable());
 
-        public static Parser<LispExpression> LispProgramParser = ListParser.EndOfInput<LispExpression>();
+        public static Parser<IEnumerable<LispExpression>> LispProgramParser = ListParser.ManyOne().EndOfInput();
     }
 }
