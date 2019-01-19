@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using MonadicParserCombinator;
 
 namespace MonadicParserCombinator.Samples.Lisp
@@ -104,8 +105,8 @@ namespace MonadicParserCombinator.Samples.Lisp
             from s in Parser.Char(' ')
             select s;
 
-        static Parser<string> Spaces =
-            from s in Space.ManyOne().Text()
+        static Parser<IEnumerable<char>> Spaces =
+            from s in Space.ManyOne()
             select s;
 
         static Parser<char> LeftParen =
@@ -125,22 +126,22 @@ namespace MonadicParserCombinator.Samples.Lisp
             select (LispExpression)new LispTerm(int.Parse(x));
 
         static Parser<LispExpression> SymbolParser =
-            from x in Parser.WhileTrue(c => c != '(' && c != ')' && c != '\0' && c != ' ').Text()
+            from x in Parser.MatchRegex(new Regex(@"a-z"))
             select (LispExpression)new LispSymbol(x);
 
-        static Parser<LispExpression> DefineParser =
-            from define in Parser.CharSequence("define")
+        public static Parser<LispExpression> DefineParser =
+            from define in Parser.MatchString("define")
             from s1     in Space
             from n      in SymbolParser
             from s2     in Space
             from expr   in ListParserInner
             select (LispExpression)new LispDefine((LispSymbol)n, expr);
         
-        static Parser<LispExpression> LambdaParser =
-            from define in Parser.CharSequence("lambda")
-            from s1     in Space
+        public static Parser<LispExpression> LambdaParser =
+            from define in Parser.MatchString("lambda")
+            from s1     in Spaces
             from n      in SymbolParser
-            from s2     in Space
+            from s2     in Spaces
             from expr   in ListParserInner
             select (LispExpression)new LispLambda((LispSymbol)n, expr);
 
@@ -156,9 +157,10 @@ namespace MonadicParserCombinator.Samples.Lisp
             from expr in Parser.SeperatedBy<LispExpression, IEnumerable<char>>(
                             Parser.EitherOf(new List<Parser<LispExpression>>(
                                 new Parser<LispExpression>[]{
+                                    DefineParser, LambdaParser,
                                     EmptyListParser, TermParser,
-                                    SymbolParser, ListParser})), Space.ManyOne())
-                                    
+                                    SymbolParser, ListParser})),
+                                Space.ManyOne())    
             from s2 in Space.Many()
             from rp in RightParen
             select (LispExpression)new LispList(expr);
