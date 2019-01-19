@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace MonadicParserCombinator
 {
@@ -49,58 +51,53 @@ namespace MonadicParserCombinator
             from second in Digit.ManyOne()
             select first.Append(dot).Concat(second);
 
-        public static Parser<IEnumerable<char>> CharSequence(string s) => i =>
+        public static Parser<string> MatchRegex(Regex regex) => i =>
         {
-            var results = new List<char>();
-            Result<char> result = Parser.Char(s[0])(i);
-
+            var results = new StringBuilder();
             Input remainder = i;
 
-            for (int j = 1; j < s.Length; j++)
-            {
+            do {
+                var result = Parser.Any(remainder);
                 if (result.IsSuccess)
                 {
-                    results.Add(result.Value);
-                    result = Parser.Char(s[j])(result.Remainder);
+                    results.Append(result.Value);
+                    remainder = result.Remainder;
                 }
                 else
                 {
-                    return Result<IEnumerable<char>>.Failure(i, "Didn't match the char sequence");
+                    return Result<string>.Success(results.ToString(), remainder);
+                }
+            } while(regex.IsMatch(results.ToString()));
+            Console.WriteLine(results.ToString());
+            return Result<string>.Success(results.ToString(), remainder);
+        };
+
+        public static Parser<string> MatchString(string s) => i =>
+        {
+            var results = new StringBuilder();
+            Input remainder = i;
+
+            for (int j = 0; j < s.Length; j++)
+            {
+                var result = Parser.Any(remainder);
+                if (result.IsSuccess)
+                {
+                    results.Append(result.Value);
+                    remainder = result.Remainder;
+                }
+                else
+                {
+                    return Result<string>.Failure(i, "Didn't match string");
                 }
             }
 
-            if (result.IsSuccess)
+            if (results.ToString() == s)
             {
-                return Result<IEnumerable<char>>.Success(results.AsEnumerable(), result.Remainder); 
+                return Result<string>.Success(results.ToString(), remainder);
             }
             else
             {
-                return Result<IEnumerable<char>>.Failure(i, "Didn't match the char sequence");
-            }
-        };
-
-        public static Parser<IEnumerable<char>> WhileTrue(Func<char, bool> predicate) => i =>
-        {
-            var results = new List<char>();
-            var result = Any(i);
-
-            Input remainder = i;
-
-            while (result.IsSuccess && predicate(result.Value))
-            {
-                remainder = result.Remainder;
-
-                results.Add(result.Value);
-                result = Any(result.Remainder);         
-            }
-
-            if (results.Any())
-            {
-                return Result<IEnumerable<char>>.Success(results.AsEnumerable(), remainder);
-            }
-            else
-            {
-                return Result<IEnumerable<char>>.Failure(i, "Nothing matched the predicate");
+                return Result<string>.Failure(i, "Didn't match string");
             }
         };
 
