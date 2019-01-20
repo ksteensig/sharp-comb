@@ -16,18 +16,19 @@ namespace MonadicParserCombinator.Samples.Lisp
         void Visit(LispLambda node);
     }
 
-    public class LispPrettyPrinter : IVisitor {
-        
+    public class LispPrettyPrinter : IVisitor
+    {
+
         public void Visit(LispList node)
         {
             Console.Write("(");
-            Console.Write(" ");            
+            Console.Write(" ");
             foreach (LispExpression e in node.expressions)
             {
                 e.Accept(this);
                 Console.Write(" ");
             }
-            
+
             Console.Write(")");
 
         }
@@ -67,6 +68,62 @@ namespace MonadicParserCombinator.Samples.Lisp
 
     }
 
+    public class LispVariableCollisionChecker : IVisitor
+    {
+        bool NameOverlap = false;
+
+        public void Visit(LispList node)
+        {
+            var symbols = new List<string>();
+
+            foreach (var e in node.expressions)
+            {
+                if (NameOverlap)
+                {
+                    return;
+                }
+
+                switch (e)
+                {
+                    case LispDefine ld:
+                        NameOverlap = NameOverlap || symbols.Exists(s => s == ld.parameter.symbol);
+                        symbols.Add(ld.parameter.symbol);
+                        break;
+                    case LispLambda ll:
+                        NameOverlap = NameOverlap || symbols.Exists(s => s == ll.parameter.symbol);
+                        symbols.Add(ll.parameter.symbol);
+                        break;
+                    default:
+                        break;
+                }
+
+                e.Accept(this);
+            }
+        }
+
+        public void Visit(EmptyLispList node) { }
+
+        public void Visit(LispTerm node) { }
+
+        public void Visit(LispSymbol node) { }
+
+        public void Visit(LispDefine node)
+        {
+            node.expression.Accept(this);
+        }
+
+        public void Visit(LispLambda node)
+        {
+            node.expression.Accept(this);
+        }
+
+        public bool ContainsNameOverlap()
+        {
+            return NameOverlap;
+        }
+
+    }
+
     public class LispSymbolMangler : IVisitor
     {
         // (symbol, times spotted)
@@ -77,7 +134,7 @@ namespace MonadicParserCombinator.Samples.Lisp
             symbols = new List<(string, int)>();
         }
 
-        
+
         public void Visit(LispList node)
         {
             foreach (var e in node.expressions)
@@ -108,7 +165,7 @@ namespace MonadicParserCombinator.Samples.Lisp
 
         public void Visit(LispDefine node)
         {
-            
+
             var old_name = node.parameter.symbol;
 
             var index = symbols.FindIndex(s => s.Symbol == old_name);
