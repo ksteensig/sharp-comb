@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using MonadicParserCombinator;
 
 namespace MonadicParserCombinator.Samples.Lisp
@@ -8,19 +9,30 @@ namespace MonadicParserCombinator.Samples.Lisp
     {
         static void Main(string[] args)
         {
-            var prog = Parser.TryParse(LispParser.LispProgramParser, "((define xx (+ 1 1)))");
+            //var prog = Parser.TryParse(LispParser.LispProgramParser, "(define x (lambda x (x 1))) (define x (1 1))");
+            /*
+                        Console.WriteLine(prog.IsSuccess);
+                        Console.WriteLine(prog.Message);
+                        Console.WriteLine(prog.Remainder.Current);
+                        Console.WriteLine(prog.Remainder.Current);
+                        Console.WriteLine(prog.Remainder.Position);
+            */
+            /*
+            var sprinter = new LispSymbolMangler();
+            var pprinter = new LispPrettyPrinter();
+            var oprinter = new LispVariableCollisionChecker();
 
-            //Console.WriteLine(prog.IsSuccess);
+            var list = new LispList(prog.Value);
 
-            var printer = new LispPrettyPrinter();
+            list.Accept(sprinter);
+            list.Accept(pprinter);
+            list.Accept(oprinter);
+            */
 
-            foreach (var e in prog.Value)
-            {
-                e.Accept(printer);
-            }
+            //Console.Write("\nContaining name overlap? ");
+            //Console.WriteLine(oprinter.ContainsNameOverlap());
 
-            //Console.WriteLine(prog.Remainder.Current);
-            //Console.WriteLine(prog.Remainder.Position);
+
         }
     }
 }
