@@ -11,8 +11,8 @@ namespace MonadicParserCombinator
 
     public static class Parser
     {
-        public static Parser<U> Select<T, U>(this Parser<T> p, Func<T, U> map) => i =>
-            p(i).IfSuccess<T, U>(head =>
+        public static Parser<U> Select<T, U>(this Parser<T> p, Func<T, U> map) =>
+            i => p(i).IfSuccess<T, U>(head =>
                 Result<U>.Success(map(head.Value), head.Remainder));
         
         public static Parser<V> SelectMany<T, U, V>(this Parser<T> p, Func<T, Parser<U>> bind, Func<T, U, V> map) => i =>
@@ -68,7 +68,6 @@ namespace MonadicParserCombinator
                     return Result<string>.Success(results.ToString(), remainder);
                 }
             } while(regex.IsMatch(results.ToString()));
-            Console.WriteLine(results.ToString());
             return Result<string>.Success(results.ToString(), remainder);
         };
 
@@ -130,7 +129,6 @@ namespace MonadicParserCombinator
                    .SkipWhile(r => !r.IsSuccess)
                    .DefaultIfEmpty(Result<T>.Failure(i, "Couldn't match any parser"))
                    .First();
-        
         public static IEnumerable<T> ReturnIEnumerable<T>(this T value) => new[] { value }.AsEnumerable();
 
         public static Parser<T> ReturnParser<T>(this T value) => i => Result<T>.Success(value, i);

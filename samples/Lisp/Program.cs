@@ -9,14 +9,16 @@ namespace MonadicParserCombinator.Samples.Lisp
     {
         static void Main(string[] args)
         {
-            //var prog = Parser.TryParse(LispParser.LispProgramParser, "(define x (lambda x (x 1))) (define x (1 1))");
-            /*
-                        Console.WriteLine(prog.IsSuccess);
-                        Console.WriteLine(prog.Message);
-                        Console.WriteLine(prog.Remainder.Current);
-                        Console.WriteLine(prog.Remainder.Current);
-                        Console.WriteLine(prog.Remainder.Position);
-            */
+
+            var parser = new LispParser();
+            var prog = LispParser.ApplicationParser.TryParse("(1 1)");
+            
+            //Console.WriteLine(prog.IsSuccess);
+            //Console.WriteLine(prog.Message);
+            //Console.WriteLine(prog.Remainder.Current);
+            //Console.WriteLine(prog.Remainder.Current);
+            //Console.WriteLine(prog.Remainder.Position);
+            
             /*
             var sprinter = new LispSymbolMangler();
             var pprinter = new LispPrettyPrinter();

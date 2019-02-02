@@ -273,13 +273,13 @@ namespace MonadicParserCombinator.Samples.Lisp
     public class LispNil : LispDatum { }
 #endregion
   
-    public static class LispParser
+    public class LispParser
     {
         //static Parser<IEnumerable<char>> SpaceNewline =
         //    from s in Parser.EitherOf(Space, Char('\n')).Many()
         //    select s;
 
-        static Parser<char> Space =
+        public static Parser<char> Space =
             from s in Parser.Char(' ')
             select s;
 
@@ -287,11 +287,11 @@ namespace MonadicParserCombinator.Samples.Lisp
             from s in Space.ManyOne()
             select s;
 
-        static Parser<char> LeftParen =
+        public static Parser<char> LeftParen =
             from lp in Parser.Char('(')
             select lp;
 
-        static Parser<char> RightParen =
+        public static Parser<char> RightParen =
             from rp in Parser.Char(')')
             select rp;
 
@@ -300,10 +300,9 @@ namespace MonadicParserCombinator.Samples.Lisp
             select nl;
 
         public static Parser<LispProgram> ProgramParser =
-            from fs in Parser.SeperatedBy(FormParser, Parser.Char('\n').ManyOne())
+            from fs in Parser.SeperatedBy(FormParser, Parser.Char('\n').ManyOne()).EndOfInput()
             select new LispProgram(fs);
-
-        static Parser<LispForm> FormParser =
+        public static Parser<LispForm> FormParser =
             from f in Parser.EitherOf(new List<Parser<LispForm>>
             {
                 FormDefinitionParser,
@@ -390,11 +389,15 @@ namespace MonadicParserCombinator.Samples.Lisp
             from es in Parser.SeperatedBy(ExpressionParser, Spaces)
             select new LispBody(ds, es);
 
-        static Parser<LispExpression> ExpressionParser =
+        public static Parser<LispExpression> ExpressionParser =
             from e in Parser.EitherOf(new List<Parser<LispExpression>>
             {
-                ConstantParser, VariableParser, LambdaParser,
-                IfParser, SetParser, ApplicationParser
+                ApplicationParser,
+                ConstantParser,
+                VariableParser,
+                LambdaParser,
+                IfParser,
+                SetParser
             })
             select e;
 
@@ -435,7 +438,7 @@ namespace MonadicParserCombinator.Samples.Lisp
             from rp in RightParen
             select (LispExpression)new LispSet((LispVariable)v, e);
 
-        static Parser<LispExpression> ApplicationParser = 
+        public static Parser<LispExpression> ApplicationParser = 
             from lp in LeftParen
             from e in ExpressionParser
             from ss in Spaces
@@ -450,28 +453,36 @@ namespace MonadicParserCombinator.Samples.Lisp
             from b in BodyParser
             select (LispExpression)new LispLambda((IEnumerable<LispVariable>)vs, b);
 
-        static Parser<LispExpression> ConstantParser =
-            from d in Parser.EitherOf(new List<Parser<LispDatum>>
+        public static Parser<LispExpression> ConstantParser =
+            from d in new List<Parser<LispDatum>>
             {
-                BooleanParser, NumberParser, CharParser, StringParser
-            })
+                NumberParser, BooleanParser, CharParser, StringParser
+            }.EitherOf()
             select (LispExpression)new LispConstant(d);
 
-        static Parser<LispExpression> VariableParser =
+        public static Parser<LispExpression> VariableParser =
             from i in IdentifierParser
             select (LispExpression)new LispVariable(i);
 
         static Parser<string> IdentifierParser =
             from i in Parser.EitherOf(new List<Parser<string>>
             {
-                from i in InitialParser
-                from s in SubsequentParser.Many()
-                select string.Concat(i.ToString(), s),
-                Parser.MatchRegex(new Regex("+")),
-                Parser.MatchRegex(new Regex("-")),
-                Parser.MatchRegex(new Regex("..."))
+                InitialSubsequentParser,
+                Parser.MatchString("+"),
+                Parser.MatchString("-"),
+                Parser.MatchString("...")
             })
             select i;
+
+        static Parser<string> InitialSubsequentParser =
+            from i in InitialParser
+            from s in SubsequentParser.Many()
+            select string.Concat(i.ToString(), s);
+
+        static Parser<char> LetterParser =
+            from l in Parser.MatchRegex(new Regex("(?i)a-z"))
+            select l.First();
+
 
         static Parser<char> InitialParser =
             from c in Parser.EitherOf(new List<Parser<char>>
@@ -505,25 +516,24 @@ namespace MonadicParserCombinator.Samples.Lisp
             })
             select c;
 
-        static Parser<char> LetterParser =
-            from l in Parser.MatchRegex(new Regex("(?i)a-z"))
-            select l.First();
+        
+        
 
-        static Parser<LispDatum> NumberParser =
-            from n in Parser.EitherOf(new List<Parser<LispDatum>>
-            {
-                IntParser,
-                DecimalParser
-            })
-            select n;
-
-        static Parser<LispDatum> IntParser =
+        public static Parser<LispDatum> IntParser =
             from i in Parser.MatchRegex(new Regex("0-90-9*"))
             select (LispDatum)new LispInt(int.Parse(i));
 
-        static Parser<LispDatum> DecimalParser =
+        public static Parser<LispDatum> DecimalParser =
             from d in Parser.MatchRegex(new Regex("0-9*.0-90-9*"))
             select (LispDatum)new LispDecimal(Double.Parse(d));
+
+        public static Parser<LispDatum> NumberParser =
+            from n in new List<Parser<LispDatum>>
+                        {
+                            IntParser,
+                            DecimalParser
+                        }.EitherOf()
+            select n;
 
         static Parser<LispDatum> BooleanParser =
             from b in Parser.EitherOf(new List<Parser<string>>
@@ -555,7 +565,7 @@ namespace MonadicParserCombinator.Samples.Lisp
             {
                 Parser.MatchString("\""),
                 Parser.MatchString("\\"),
-                Parser.MatchRegex(new Regex("[^\"\\]"))
+                //Parser.MatchRegex(new Regex("[^\"\\]"))
             })
             select s.First();
 

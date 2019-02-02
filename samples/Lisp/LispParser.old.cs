@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using MonadicParserCombinator;
 
-namespace MonadicParserCombinator.Samples.Lisp
+namespace MonadicParserCombinator.Samples.Lisp.Old
 {
     public abstract class LispExpression
     {
@@ -125,7 +125,15 @@ namespace MonadicParserCombinator.Samples.Lisp
             from nl in Parser.Char(')')
             select nl;
 
-        static Parser<LispExpression> TermParser =
+         public static Parser<char> NumberParser =
+            from n in IntParser
+            select n;
+
+        public static Parser<char> IntParser =
+            from x in Parser.Char('1')
+            select x;
+
+        public static Parser<LispExpression> TermParser =
             from x in Parser.Integer.Text()
             select (LispExpression)new LispTerm(int.Parse(x));
 
@@ -208,12 +216,6 @@ namespace MonadicParserCombinator.Samples.Lisp
                                 EmptyListParser, ListParserInner,
                                 TermParser, SymbolParser}))
             select d;
-
-        public static Parser<LispExpression> VariableParser1 =
-            from lp in LeftParen
-            from define in BodyParser.MatchString("define")
-            from rp in RightParen
-            select
 
         public static Parser<LispExpression> BodyParser =
             from d in Parser.EitherOf(new List<Parser<LispExpression>>(

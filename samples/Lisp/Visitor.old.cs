@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using MonadicParserCombinator;
 
-namespace MonadicParserCombinator.Samples.Lisp
+namespace MonadicParserCombinator.Samples.Lisp.Old
 {
     public interface IVisitor
     {
