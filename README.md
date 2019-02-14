@@ -1,5 +1,5 @@
-# Monadic Parser Combinator
-This library is a monadic parser combinator library implemented in C#.
+# Shar Comb - Monadic Parser Combinator
+Sharp Comb  is a monadic parser combinator library implemented in C#.
 
 It's bundled as a library in the src folder. While in the samples folder an extremely simple example can be found.
 
