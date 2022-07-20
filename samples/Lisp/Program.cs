@@ -11,14 +11,16 @@ namespace MonadicParserCombinator.Samples.Lisp
         {
 
             var parser = new LispParser();
-            var prog = LispParser.ProgramParser.TryParse("(+ 1 1)");
-            
+            var prog = LispParser.LList.TryParse("(1 1)");
+
             Console.WriteLine(prog.IsSuccess);
+
+            Console.WriteLine(prog.Message);
             //Console.WriteLine(prog.Message);
             //Console.WriteLine(prog.Remainder.Current);
             //Console.WriteLine(prog.Remainder.Current);
             //Console.WriteLine(prog.Remainder.Position);
-            
+
             /*
             var sprinter = new LispSymbolMangler();
             var pprinter = new LispPrettyPrinter();

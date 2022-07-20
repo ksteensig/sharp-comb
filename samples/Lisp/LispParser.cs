@@ -4,612 +4,294 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using MonadicParserCombinator;
 
+
 namespace MonadicParserCombinator.Samples.Lisp
 {
-    public interface IVisitor { }
-    /*
-    public abstract class LispExpression
+    public partial class LispParser
     {
-        public abstract void Accept(IVisitor visitor);
-    }
-    */
-
-    public class LispProgram
-    {
-        public IEnumerable<LispForm> forms;
-
-        public LispProgram(IEnumerable<LispForm> forms)
-        {
-            this.forms = forms;
-        }
-    }
-
-    public class LispForm { }
-
-    public class LispDefinition : LispForm { }
-
-    public class LispBeginDefinition : LispDefinition
-    {
-        public IEnumerable<LispDefinition> definitions;
-
-        public LispBeginDefinition(IEnumerable<LispDefinition> defs)
-        {
-            this.definitions = defs;
-        }
-    }
-
-    public class LispVariableDefinition : LispDefinition { }
-
-    public class LispVariableDefinition1 : LispVariableDefinition
-    {
-        public LispVariable variable;
-        public LispExpression expression;
-
-        public LispVariableDefinition1(LispVariable var, LispExpression expr)
-        {
-            this.variable = var;
-            this.expression = expr;
-        }
-    }
-    public class LispVariableDefinition2 : LispVariableDefinition
-    {
-        public IEnumerable<LispVariable> variables;
-        public LispBody body;
-
-        public LispVariableDefinition2(IEnumerable<LispVariable> vars, LispBody body)
-        {
-            this.variables = vars;
-            this.body = body;
-        }
-    }
-
-    public class LispBody
-    {
-        public IEnumerable<LispDefinition> definitions;
-        public IEnumerable<LispExpression> expressions;
-
-        public LispBody(IEnumerable<LispDefinition> defs, IEnumerable<LispExpression> exprs)
-        {
-            this.definitions = defs;
-            this.expressions = exprs;
-        }
-
-    }
-
-    public class LispExpression : LispForm { }
-   
-    public class LispVariable : LispExpression
-    {
-        public string identifier;
-
-        public LispVariable(string id)
-        {
-            this.identifier = id;
-        }
-    }
-
-    public class LispConstant : LispExpression
-    {
-        public LispDatum constant;
-
-        public LispConstant(LispDatum constant)
-        {
-            this.constant = constant;
-        }
-    }
-
-
-    public class LispLambda : LispExpression
-    {
-        public IEnumerable<LispVariable> formals;
-        public LispBody body;
-
-        public LispLambda(IEnumerable<LispVariable> formals, LispBody body)
-        {
-            this.formals = formals;
-            this.body = body;
-        }
-    }
-
-    public class LispIf : LispExpression { }
-
-    public class LispIf2 : LispIf
-    {
-        public LispExpression expression1;
-        public LispExpression expression2;
-
-        public LispIf2(LispExpression expr1, LispExpression expr2)
-        {
-            this.expression1 = expr1;
-            this.expression2 = expr2;
-        }
-    }
-
-    public class LispIf3 : LispIf
-    {
-        public LispExpression expression1;
-        public LispExpression expression2;
-        public LispExpression expression3;
-
-        public LispIf3(LispExpression expr1, LispExpression expr2, LispExpression expr3)
-        {
-            this.expression1 = expr1;
-            this.expression2 = expr2;
-            this.expression3 = expr3;
-        }
-    }
-
-    public class LispSet : LispExpression
-    {
-        public LispVariable variable;
-        public LispExpression expression;
-
-        public LispSet(LispVariable var, LispExpression expr)
-        {
-            this.variable = var;
-            this.expression = expr;
-        }
-    }
-
-    public class LispApplication : LispExpression
-    {
-        public LispExpression applier;
-        public IEnumerable<LispExpression> applicants;
-
-        public LispApplication(LispExpression applier, IEnumerable<LispExpression> applicants)
-        {
-            this.applier = applier;
-            this.applicants = applicants;
-        }
-    }
-
-#region Datum
-    public class LispDatum { }
-
-    public class LispBoolean : LispDatum
-    {
-        public bool boolean;
-
-        public LispBoolean(bool boolean)
-        {
-            this.boolean = boolean;
-        }
-
-        public LispBoolean(string boolean)
-        {
-            if (boolean.ToLower() == "#f")
-            {
-                this.boolean = false;
-            }
-            else
-            {
-                this.boolean = true;
-            }
-        }
-    }
-
-    public class LispNumber : LispDatum { }
-
-    public class LispInt : LispNumber
-    {
-        public int value;
-
-        public LispInt(int value)
-        {
-            this.value = value;
-        }
-    }
-
-    public class LispDecimal : LispNumber
-    {
-        public double value;
-
-        public LispDecimal(double value)
-        {
-            this.value = value;
-        }
-    }
-
-    public class LispChar : LispDatum
-    {
-        public string character;
-
-        public LispChar(string character)
-        {
-            this.character = character;
-        }
-    }
-
-    public class LispString : LispDatum
-    {
-        public string str;
-
-        public LispString(string str)
-        {
-            this.str = str;
-        }
-    }
-
-    public class LispList : LispDatum
-    {
-        public IEnumerable<LispDatum> list;
-
-        public LispList(IEnumerable<LispDatum> list)
-        {
-            this.list = list;
-        }
-    }
-
-    public class LispVector : LispDatum
-    {
-        public IEnumerable<LispDatum> vector;
-
-        public LispVector(IEnumerable<LispDatum> vector)
-        {
-            this.vector = vector;
-        }
-    }
-
-    public class LispAbbreviation : LispDatum
-    {
-        public LispDatum data;
-
-        public LispAbbreviation(LispDatum data)
-        {
-            this.data = data;
-        }
-    }
-    
-    public class LispSymbol : LispDatum
-    {
-        public string symbol;
-
-        public LispSymbol(string id)
-        {
-            this.symbol = id;
-        }
-    }
-
-    public class LispNil : LispDatum { }
-#endregion
-  
-    public class LispParser
-    {
-        //static Parser<IEnumerable<char>> SpaceNewline =
-        //    from s in Parser.EitherOf(Space, Char('\n')).Many()
-        //    select s;
-
         public static Parser<char> Space =
-            from s in Parser.Char(' ')
-            select s;
+            from c in Parser.Char(' ')
+            select c;
 
         static Parser<IEnumerable<char>> Spaces =
             from s in Space.ManyOne()
             select s;
 
-        public static Parser<char> LeftParen =
-            from lp in Parser.Char('(')
-            select lp;
+        static Parser<IEnumerable<char>> SpacesP =
+            from s in Space.ManyOne()
+            select s;
 
-        public static Parser<char> RightParen =
-            from rp in Parser.Char(')')
-            select rp;
-
+        static Parser<IEnumerable<char>> SpacesS =
+            from s in Space.Many()
+            select s;
         static Parser<char> Newline =
-            from nl in Parser.Char('\n')
-            select nl;
+                    from nl in Parser.Char('\n')
+                    select nl;
 
-        public static Parser<LispDatum> IntParser =
-            from i in Parser.MatchRegex(new Regex("0-90-9*"))
-            select (LispDatum)new LispInt(int.Parse(i));
+        static Parser<char> Tab =
+                    from tab in Parser.Char('\t')
+                    select tab;
 
-        public static Parser<LispDatum> DecimalParser =
-            from d in Parser.MatchRegex(new Regex("0-9*.0-90-9*"))
-            select (LispDatum)new LispDecimal(Double.Parse(d));
+        static Parser<char> Whitespace = Parser.EitherOf(
+            new List<Parser<char>> {
+                Tab, Space, Newline
+            });
 
-        public static Parser<LispDatum> NumberParser =
-            from n in new List<Parser<LispDatum>>
-                        {
-                            IntParser,
-                            DecimalParser
-                        }.EitherOf()
-            select n;
+        static Parser<IEnumerable<char>> Whitespaces = from ws in Whitespace.Many()
+                                                       select ws;
 
-        static Parser<LispDatum> BooleanParser =
-            from b in Parser.EitherOf(new List<Parser<string>>
+        static Parser<char> TabOrNewline = from tn in Parser.EitherOf(new List<Parser<char>>
+                                                        {
+                                                            Newline,
+                                                            Tab
+                                                        })
+                                           select tn;
+
+        static Parser<IEnumerable<char>> WhitespaceE = from tn in TabOrNewline
+                                                       from s in Space
+                                                       from ws in Whitespaces
+                                                       select tn.ToString()
+                                                                .AsEnumerable()
+                                                                .Concat(s.ToString()
+                                                                         .AsEnumerable())
+                                                                .Concat(ws);
+
+        static Parser<string> True = from b in Parser.MatchString("#t")
+                                     select "true";
+
+        static Parser<string> False = from b in Parser.MatchString("#f")
+                                      select "false";
+
+        static Parser<char> Quote = from s in Parser.MatchString("\\\"")
+                                    select '"';
+
+
+        static Parser<char> Escape = from s in Parser.MatchString("\\\\")
+                                     select '\\';
+
+        static Parser<char> Dot = from s in Parser.Char('.')
+                                  select s;
+
+        static Parser<char> Plus = from s in Parser.Char('+')
+                                   select s;
+
+        static Parser<char> Minus = from s in Parser.Char('-')
+                                    select s;
+
+        static Parser<char> Exclamation = from s in Parser.Char('!')
+                                          select s;
+        static Parser<char> Dollar = from s in Parser.Char('$')
+                                     select s;
+        static Parser<char> Percent = from s in Parser.Char('%')
+                                      select s;
+        static Parser<char> Ambersand = from s in Parser.Char('&')
+                                        select s;
+        static Parser<char> Slash = from s in Parser.Char('/')
+                                    select s;
+
+        static Parser<char> Colon = from s in Parser.Char(':')
+                                    select s;
+
+        static Parser<char> LT = from s in Parser.Char('<')
+                                 select s;
+
+        static Parser<char> EQ = from s in Parser.Char('=')
+                                 select s;
+
+        static Parser<char> GT = from s in Parser.Char('>')
+                                 select s;
+
+        static Parser<char> Question = from s in Parser.Char('?')
+                                       select s;
+
+        static Parser<char> Tilde = from s in Parser.Char('~')
+                                    select s;
+
+        static Parser<char> Underscore = from s in Parser.Char('_')
+                                         select s;
+
+        static Parser<char> Caret = from s in Parser.Char('^')
+                                    select s;
+
+        public static Parser<char> LParen = from lp in Parser.Char('(')
+                                            select lp;
+
+        public static Parser<char> RParen = from rp in Parser.Char(')')
+                                            select rp;
+
+        static Parser<char> SQuote = from s in Parser.Char('\'')
+                                     select s;
+
+        static Parser<string> Define = from s in Parser.MatchString("define")
+                                       select s;
+
+
+
+        static Parser<LispNode> Boolean = from b in Parser.EitherOf(
+            new List<Parser<string>>
             {
-                Parser.MatchString("(?i)#f"),
-                Parser.MatchString("(?i)#t")
+                True, False // Boolean.Parse
             })
-            select (LispDatum)new LispBoolean(b);
+                                          select new LispNode();
 
-        static Parser<LispDatum> StringParser =
-            from q1 in Parser.Char('"')
-            from s in StringCharacterParser.Many().Text()
-            from q2 in Parser.Char('"')
-            select (LispDatum)new LispString(s);
+        static Parser<char> AsciiQuote = from s in Parser.MatchString("\"")
+                                         select '\"';
 
-        static Parser<LispDatum> CharParser =
-            from s in Parser.EitherOf(new List<Parser<string>>
+        static Parser<char> AsciiEscape = from s in Parser.MatchString("\\")
+                                          select '\\';
+
+        static Parser<char> StringChar = from s in Parser.EitherOf(
+            new List<Parser<char>>
             {
-                /* ignore case with (?i) */
-                Parser.MatchString(@"(?i)#\newline"),
-                Parser.MatchString(@"(?i)#\space"),
-                Parser.MatchRegex(new Regex(@"(?i)#\a-z")),
+                Quote,
+                Escape,
+                Parser.Exclude(
+                    Parser.Ascii,
+                    Parser.EitherOf(
+                    new List<Parser<char>>(
+                        new List<Parser<char>> {
+                            AsciiQuote,
+                            AsciiEscape
+                        })
+                    )
+                )
             })
-            select (LispDatum)new LispChar(s);
+                                         select s;
 
+        public static Parser<LispNode> String = from aq1 in AsciiQuote
+                                                from sc in StringChar.Many()
+                                                from aq2 in AsciiQuote
+                                                select new LispNode(); // return sc
 
-        static Parser<char> StringCharacterParser =
-            from s in Parser.EitherOf(new List<Parser<string>>
-            {
-                Parser.MatchString("\""),
-                Parser.MatchString("\\"),
-                //Parser.MatchRegex(new Regex("[^\"\\]"))
+        public static Parser<char> Digit = from ad in Parser.EitherOf(
+            new List<Parser<char>> {
+                Parser.Char('0'),
+                Parser.Char('1'),
+                Parser.Char('2'),
+                Parser.Char('3'),
+                Parser.Char('4'),
+                Parser.Char('5'),
+                Parser.Char('6'),
+                Parser.Char('7'),
+                Parser.Char('8'),
+                Parser.Char('9')
             })
-            select s.First();
+                                           select ad;
 
-        static Parser<LispDatum> DotListParser =
-            from lp in LeftParen
-            from front in Parser.SeperatedBy(DatumParser, Spaces)
-            from s1 in Spaces
-            from d in Parser.Char('.')
-            from s2 in Spaces
-            from back in DatumParser
-            from rp in RightParen
-            select (LispDatum)new LispList(front.Append(back));
+        public static Parser<LispNode> Integer =
+            from i in Digit.ManyOne() // Int.Parse
+            select new LispNode();
 
-        static Parser<LispDatum> ListParser =
-            from lp in LeftParen
-            from dl in Parser.SeperatedBy(DatumParser, Spaces)
-            from rp in RightParen
-            select (LispDatum)new LispList(dl);
+        public static Parser<LispNode> Decimal =
+            from d1 in Digit.ManyOne() // Double.Parse
+            from d in Dot
+            from d2 in Digit.ManyOne()
+            select new LispNode();
 
-        static Parser<LispDatum> AbbreviationParser =
-            from q in Parser.EitherOf(new List<Parser<string>>
+        public static Parser<LispNode> Number = from n in
+            new List<Parser<LispNode>>
             {
-                Parser.MatchString("\'"),
-                Parser.MatchString("quote ")
-            })
-            from d in DatumParser
-            select (LispDatum)new LispAbbreviation(d);
-
-        static Parser<LispDatum> SymbolParser =
-            from i in IdentifierParser
-            select (LispDatum) new LispSymbol(i);
-
-        static Parser<LispDatum> VectorParser =
-            from h in Parser.Char('#')
-            from lp in LeftParen
-            from v in Parser.SeperatedBy(DatumParser, Spaces)
-            from rp in RightParen
-            select (LispDatum)new LispVector(v);
-
-        static Parser<LispDatum> DatumParser =
-            from d in Parser.EitherOf<LispDatum>(new List<Parser<LispDatum>>
-            {
-                BooleanParser, NumberParser, CharParser,
-                StringParser, SymbolParser,
-                DotListParser, ListParser, AbbreviationParser
-            })
-            select d;
-
-        static Parser<char> LetterParser =
-            from l in Parser.MatchRegex(new Regex("(?i)a-z"))
-            select l.First();
-
-        static Parser<string> InitialSubsequentParser =
-            from i in InitialParser
-            from s in SubsequentParser.Many()
-            select string.Concat(i.ToString(), s);
-
-        static Parser<char> InitialParser =
-            from c in Parser.EitherOf(new List<Parser<char>>
-            {
-                LetterParser,
-                Parser.Char('!'),
-                Parser.Char('$'),
-                Parser.Char('%'),
-                Parser.Char('&'),
-                Parser.Char('*'),
-                Parser.Char('/'),
-                Parser.Char(':'),
-                Parser.Char('<'),
-                Parser.Char('='),
-                Parser.Char('>'),
-                Parser.Char('?'),
-                Parser.Char('~'),
-                Parser.Char('_'),
-                Parser.Char('^')
-            })
-            select c;
-
-        static Parser<char> SubsequentParser =
-            from c in Parser.EitherOf(new List<Parser<char>>
-            {
-                InitialParser,
-                Parser.Digit,
-                Parser.Char('.'),
-                Parser.Char('+'),
-                Parser.Char('-')
-            })
-            select c;
-
-        static Parser<string> IdentifierParser =
-            from i in Parser.EitherOf(new List<Parser<string>>
-            {
-                InitialSubsequentParser,
-                Parser.MatchString("+"),
-                Parser.MatchString("-"),
-                Parser.MatchString("...")
-            })
-            select i;
-
-        public static Parser<LispExpression> VariableParser =
-            from i in IdentifierParser
-            select (LispExpression)new LispVariable(i);
-
-        static Parser<LispExpression> ApplicationParser = 
-            from lp in LeftParen
-            from e in ExpressionParser
-            from ss in Spaces
-            from es in Parser.SeperatedBy(ExpressionParser, Spaces)
-            from rp in RightParen
-            select (LispExpression)new LispApplication(e, es);
-
-        static Parser<LispExpression> SetParser =
-            from lp in LeftParen
-            from set in Parser.MatchString("set!")
-            from ss in Spaces
-            from v in VariableParser
-            from ss2 in Spaces
-            from e in ExpressionParser
-            from rp in RightParen
-            select (LispExpression)new LispSet((LispVariable)v, e);
-
-        static Parser<LispExpression> LambdaParser =
-            from lp in LeftParen
-            from vs in Parser.SeperatedBy(VariableParser, Spaces)
-            from ss in Spaces
-            from b in BodyParser
-            select (LispExpression)new LispLambda((IEnumerable<LispVariable>)vs, b);
-
-        public static Parser<LispExpression> ConstantParser =
-            from d in new List<Parser<LispDatum>>
-            {
-                NumberParser, BooleanParser, CharParser, StringParser
+                Decimal, // important to parse decimal first as first part is also valid int
+                Integer
             }.EitherOf()
-            select (LispExpression)new LispConstant(d);
+                                                select n;
 
-        static Parser<LispIf> If2Parser =
-            from i in Parser.MatchString("if")
-            from ss in Spaces
-            from e1 in ExpressionParser
-            from ss2 in Spaces
-            from e2 in ExpressionParser
-            select (LispIf)new LispIf2(e1, e2);
-
-        static Parser<LispIf> If3Parser =
-            from i in Parser.MatchString("if")
-            from ss in Spaces
-            from e1 in ExpressionParser
-            from ss2 in Spaces
-            from e2 in ExpressionParser
-            from ss3 in Spaces
-            from e3 in ExpressionParser
-            select (LispIf)new LispIf3(e1, e2, e3);
-
-        static Parser<LispExpression> IfParser =
-            from lp in LeftParen
-            from i in Parser.EitherOf(new List<Parser<LispIf>>
-            {
-                If2Parser, If3Parser
+        public static Parser<char> Initial = from i in Parser.EitherOf(
+            new List<Parser<char>> {
+                Parser.Ascii.Where(c => c >= 'a' && c <= 'z'),
+                Exclamation,
+                Dollar,
+                Percent,
+                Ambersand,
+                Slash,
+                Colon,
+                LT,
+                EQ,
+                GT,
+                Question,
+                Tilde,
+                Underscore,
+                Caret
             })
-            from rp in RightParen
-            select (LispExpression)i;
+                                             select i;
 
 
-        public static Parser<LispExpression> ExpressionParser =
-            from e in Parser.EitherOf(new List<Parser<LispExpression>>
+
+
+        public static Parser<char> Subsequent = from s in Parser.EitherOf(
+            new List<Parser<char>> {
+                Initial,
+                Plus,
+                Digit,
+                Dot,
+                Plus,
+                Minus
+            }
+        )
+                                                select s;
+
+
+        public static Parser<IEnumerable<char>> InitSub = from i in Initial
+                                                          from ss in Subsequent.Many()
+                                                          select i.ReturnIEnumerable()
+                                                                  .Concat(ss);
+
+        public static Parser<LispNode> Identifier = from i in Parser.EitherOf(
+            new List<Parser<IEnumerable<char>>> {
+                Dot.Then<char, IEnumerable<char>>(d => d.ReturnIEnumerable().ReturnParser()),
+                Plus.Then<char, IEnumerable<char>>(p => p.ReturnIEnumerable().ReturnParser()),
+                Minus.Then<char, IEnumerable<char>>(m => m.ReturnIEnumerable().ReturnParser()),
+                InitSub
+            }
+        )
+                                                    select new LispNode();
+
+        public static Parser<LispNode> datum = from d in Parser.EitherOf(
+            new List<Parser<LispNode>>
             {
-                ApplicationParser,
-                ConstantParser,
-                VariableParser,
-                LambdaParser,
-                IfParser,
-                SetParser
-            })
-            select e;
+                Number,
+                String,
+                Boolean,
+                    from lp in LParen
+                    from ws1 in Whitespaces
+                    from d in Datum
+                    from _ in (from wse in WhitespaceE
+                               from ds in Datum
+                               select new LispNode()).Many()
+                    from ws2 in Whitespaces
+                    from rp in RParen
+                    select new LispNode(),
+                Identifier
+    }
+        )
+                                               select new LispNode();
 
-        static Parser<LispDefinition> BeginDefinitionParser =
-            from lp in LeftParen
-            from begin in Parser.MatchString("begin")
-            from ss in Spaces
-            from ds in Parser.SeperatedBy(DefinitionParser, Spaces)
-            from rp in RightParen
-            select (LispDefinition)new LispBeginDefinition(ds);
+        public static Parser<LispNode> LList = from lp in LParen
+                                               from ws1 in Whitespaces
+                                               from d in Datum
+                                               from ds in (from wse in WhitespaceE
+                                                           from ds in Datum
+                                                           select new LispNode()).Many()
+                                               from ws2 in Whitespaces
+                                               from rp in RParen
+                                               select new LispNode();
 
-        static Parser<LispBody> BodyParser =
-            from ds in Parser.SeperatedBy(DefinitionParser, Spaces)
-            from es in Parser.SeperatedBy(ExpressionParser, Spaces)
-            select new LispBody(ds, es);
+        public static Parser<LispNode> ExpressionA = from lp in LParen
+                                                     from ws1 in Whitespaces
+                                                     from id in Identifier
+                                                     from wse1 in WhitespaceE
+                                                     from d in Datum
+                                                     from _ in (from wse in WhitespaceE
+                                                                from ds in Datum
+                                                                select new LispNode()).Many()
+                                                     from ws2 in Whitespaces
+                                                     from rp in RParen
+                                                     select new LispNode();
 
-        static Parser<LispVariableDefinition> VariableDefinition2Parser =
-            from lp in LeftParen
-            from define in Parser.MatchString("define")
-            from ss in Spaces
-            from lp2 in LeftParen
-            from vs in Parser.SeperatedBy(VariableParser, Spaces)
-            from rp2 in RightParen
-            from ss2 in Spaces
-            from b in BodyParser
-            from rp in RightParen
-            select (LispVariableDefinition)
-                new LispVariableDefinition2((IEnumerable<LispVariable>)vs, b);
+        public static Parser<LispNode> Program = ExpressionA.EndOfInput();
 
-        static Parser<LispVariableDefinition> VariableDefinition2ConsParser =
-            from lp in LeftParen
-            from define in Parser.MatchString("define")
-            from ss in Spaces
-            from lp2 in LeftParen
-            from vs in Parser.SeperatedBy(VariableParser, Spaces)
-            from ss2 in Spaces
-            from dot in Parser.Char('.')
-            from ss3 in Spaces
-            from v in VariableParser
-            from rp2 in RightParen
-            from ss4 in Spaces
-            from b in BodyParser
-            from rp in RightParen
-            select (LispVariableDefinition)
-                new LispVariableDefinition2((IEnumerable<LispVariable>)vs.Append(v), b);
-
-        static Parser<LispVariableDefinition> VariableDefinition1Parser =
-            from lp in LeftParen
-            from define in Parser.MatchString("define")
-            from ss in Spaces
-            from v in VariableParser
-            from e in ExpressionParser
-            from rp in RightParen
-            select (LispVariableDefinition)
-                new LispVariableDefinition1((LispVariable)v, e);
-
-        static Parser<LispDefinition> VariableDefinitionParser =
-            from vd in Parser.EitherOf(new List<Parser<LispVariableDefinition>>
-            {
-                VariableDefinition1Parser,
-                VariableDefinition2Parser,
-                VariableDefinition2ConsParser
-            })
-            select (LispDefinition)vd;
-
-        static Parser<LispDefinition> DefinitionParser =
-            from d in Parser.EitherOf(new List<Parser<LispDefinition>>
-            {
-                VariableDefinitionParser,
-                BeginDefinitionParser
-            })
-            select d;
-
-        static Parser<LispForm> FormDefinitionParser =
-            from d in DefinitionParser
-            select (LispForm)d;
-
-        static Parser<LispForm> FormExpressionParser =
-            from e in ExpressionParser
-            select (LispForm)e;
-
-        public static Parser<LispForm> FormParser =
-            from f in Parser.EitherOf(new List<Parser<LispForm>>
-            {
-                FormDefinitionParser,
-                FormExpressionParser
-            })
-            select f;
-
-        public static Parser<LispProgram> ProgramParser =
-            from fs in Parser.SeperatedBy(FormParser, Parser.Char('\n').ManyOne()).EndOfInput()
-            select new LispProgram(fs);
-
+        public static Parser<LispNode> Datum { get => Datum1; set => Datum1 = value; }
+        public static Parser<LispNode> Datum1 { get => datum; set => datum = value; }
+        public static Parser<LispNode> Datum2 { get => datum; set => datum = value; }
     }
 }
