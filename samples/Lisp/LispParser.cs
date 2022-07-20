@@ -40,19 +40,17 @@ namespace MonadicParserCombinator.Samples.Lisp
         static Parser<IEnumerable<char>> Whitespaces = from ws in Whitespace.Many()
                                                        select ws;
 
-        static Parser<char> TabOrNewline = from tn in Parser.EitherOf(new List<Parser<char>>
+        static Parser<IEnumerable<char>> TabOrNewline = from tn in Parser.EitherOf(new List<Parser<char>>
                                                         {
                                                             Newline,
                                                             Tab
-                                                        })
-                                           select tn;
+                                                        }).Many()
+                                                        select tn;
 
         static Parser<IEnumerable<char>> WhitespaceE = from tn in TabOrNewline
                                                        from s in Space
                                                        from ws in Whitespaces
-                                                       select tn.ToString()
-                                                                .AsEnumerable()
-                                                                .Concat(s.ToString()
+                                                       select tn.Concat(s.ToString()
                                                                          .AsEnumerable())
                                                                 .Concat(ws);
 
@@ -246,7 +244,7 @@ namespace MonadicParserCombinator.Samples.Lisp
         )
                                                     select new LispNode();
 
-        public static Parser<LispNode> datum = from d in Parser.EitherOf(
+        public static Parser<LispNode> Datum = from d in Parser.EitherOf(
             new List<Parser<LispNode>>
             {
                 Number,
@@ -269,7 +267,7 @@ namespace MonadicParserCombinator.Samples.Lisp
         public static Parser<LispNode> LList = from lp in LParen
                                                from ws1 in Whitespaces
                                                from d in Datum
-                                               from ds in (from wse in WhitespaceE
+                                               from ds in (from wse in Spaces // problem is to allow tab/nl but ensure a space
                                                            from ds in Datum
                                                            select new LispNode()).Many()
                                                from ws2 in Whitespaces
@@ -279,9 +277,9 @@ namespace MonadicParserCombinator.Samples.Lisp
         public static Parser<LispNode> ExpressionA = from lp in LParen
                                                      from ws1 in Whitespaces
                                                      from id in Identifier
-                                                     from wse1 in WhitespaceE
+                                                     from wse1 in Spaces
                                                      from d in Datum
-                                                     from _ in (from wse in WhitespaceE
+                                                     from _ in (from wse in Spaces
                                                                 from ds in Datum
                                                                 select new LispNode()).Many()
                                                      from ws2 in Whitespaces
@@ -289,9 +287,5 @@ namespace MonadicParserCombinator.Samples.Lisp
                                                      select new LispNode();
 
         public static Parser<LispNode> Program = ExpressionA.EndOfInput();
-
-        public static Parser<LispNode> Datum { get => Datum1; set => Datum1 = value; }
-        public static Parser<LispNode> Datum1 { get => datum; set => datum = value; }
-        public static Parser<LispNode> Datum2 { get => datum; set => datum = value; }
     }
 }
