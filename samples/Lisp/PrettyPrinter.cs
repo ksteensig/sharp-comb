@@ -15,7 +15,7 @@ namespace MonadicParserCombinator.Samples.Lisp
 
         public void Visit(StringNode node)
         {
-            Console.Write(node.value);
+            Console.Write("\"" + node.value + "\"");
         }
 
         public void Visit(IntegerNode node)

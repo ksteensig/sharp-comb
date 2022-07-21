@@ -132,11 +132,9 @@ namespace MonadicParserCombinator.Samples.Lisp
             })
                                           select (LispNode)new BooleanNode { value = bool.Parse(b) };
 
-        static Parser<char> AsciiQuote = from s in Parser.MatchString("\"")
-                                         select '\"';
+        static Parser<char> AsciiQuote = Parser.Char('"');
 
-        static Parser<char> AsciiEscape = from s in Parser.MatchString("\\")
-                                          select '\\';
+        static Parser<char> AsciiEscape = Parser.Char('\\');
 
         static Parser<char> StringChar = Parser.EitherOf(
             new List<Parser<char>>
@@ -159,7 +157,10 @@ namespace MonadicParserCombinator.Samples.Lisp
         public static Parser<LispNode> String = from aq1 in AsciiQuote
                                                 from sc in StringChar.Many()
                                                 from aq2 in AsciiQuote
-                                                select new LispNode(); // return sc
+                                                select (LispNode)new StringNode
+                                                {
+                                                    value = string.Concat(sc)
+                                                };
 
         public static Parser<char> Digit = from ad in Parser.EitherOf(
             new List<Parser<char>> {
