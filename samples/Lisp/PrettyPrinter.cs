@@ -36,11 +36,15 @@ namespace MonadicParserCombinator.Samples.Lisp
         public void Visit(LListNode node)
         {
             Console.Write("(");
+            bool first = true;
             foreach (LispNode n in node.children)
             {
-
+                if (!first)
+                {
+                    Console.Write(" ");
+                }
                 n.Accept(this);
-                Console.Write(" ");
+                first = false;
 
             }
             Console.Write(")");
@@ -51,10 +55,15 @@ namespace MonadicParserCombinator.Samples.Lisp
             Console.Write("(");
             Console.Write(node.id.id);
             Console.Write(" ");
+            bool first = true;
             foreach (LispNode n in node.ds)
             {
+                if (!first)
+                {
+                    Console.Write(" ");
+                }
                 n.Accept(this);
-                Console.Write(" ");
+                first = false;
             }
             Console.Write(")");
         }
@@ -68,10 +77,15 @@ namespace MonadicParserCombinator.Samples.Lisp
         public void Visit(BodyNode node)
         {
             Console.Write("(");
+            bool first = true;
             foreach (LispNode n in node.expressions)
             {
+                if (!first)
+                {
+                    Console.Write(" ");
+                }
                 n.Accept(this);
-                Console.Write(" ");
+                first = false;
             }
             Console.Write(")");
         }
@@ -86,10 +100,16 @@ namespace MonadicParserCombinator.Samples.Lisp
             node.identifier.Accept(this);
             Console.Write(" ");
 
+            bool first = true;
+
             foreach (LispNode n in node.parameters)
             {
+                if (!first)
+                {
+                    Console.Write(" ");
+                }
                 n.Accept(this);
-                Console.Write(" ");
+                first = false;
             }
             Console.Write(")");
             Console.Write(" ");
@@ -116,11 +136,15 @@ namespace MonadicParserCombinator.Samples.Lisp
 
         public void Visit(ProgramNode node)
         {
-            Console.WriteLine(" ");
+            bool first = true;
             foreach (var n in node.forms)
             {
+                if (!first)
+                {
+                    Console.Write(" ");
+                }
                 n.Accept(this);
-                Console.Write(" ");
+                first = false;
             }
 
             Console.WriteLine(" ");
