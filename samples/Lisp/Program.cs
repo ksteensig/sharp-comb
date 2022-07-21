@@ -15,6 +15,12 @@ namespace MonadicParserCombinator.Samples.Lisp
             //var prog = LispParser.Definition2.EndOfInput().TryParse("(define x (1 2 3))");
             var prog = LispParser.Grammar.TryParse("(define (f x y z) (+ x y z)) (define (f x y z) (+ x y z))");
 
+            //var prog = LispParser.Integer.EndOfInput().TryParse("1");
+
+            var pprinter = new LispPrettyPrinter();
+
+            prog.Value.Accept(pprinter);
+
             Console.WriteLine(prog.IsSuccess);
 
             Console.WriteLine(prog.Message);

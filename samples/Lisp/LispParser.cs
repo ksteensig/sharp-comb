@@ -128,9 +128,9 @@ namespace MonadicParserCombinator.Samples.Lisp
         static Parser<LispNode> Boolean = from b in Parser.EitherOf(
             new List<Parser<string>>
             {
-                True, False // Boolean.Parse
+                True, False
             })
-                                          select new LispNode();
+                                          select (LispNode)new BooleanNode { value = bool.Parse(b) };
 
         static Parser<char> AsciiQuote = from s in Parser.MatchString("\"")
                                          select '\"';
@@ -176,26 +176,32 @@ namespace MonadicParserCombinator.Samples.Lisp
             })
                                            select ad;
 
+        public static Parser<IEnumerable<char>> Integer2 =
+            from i in Digit.ManyOne() // Int.Parse
+            select i;
+
         public static Parser<LispNode> Integer =
             from i in Digit.ManyOne() // Int.Parse
-            select new LispNode();
+            select (LispNode)new IntegerNode { value = int.Parse(string.Concat(i)) };
 
         public static Parser<LispNode> Decimal =
             from d1 in Digit.ManyOne() // Double.Parse
             from d in Dot
             from d2 in Digit.ManyOne()
-            select new LispNode();
+            select (LispNode)new DecimalNode
+            {
+                value = double.Parse(
+                    string.Concat(d1.Concat(d.ReturnIEnumerable()).Concat(d2))
+                )
+            };
 
-        public static Parser<LispNode> Number = from n in
-            new List<Parser<LispNode>>
+        public static Parser<LispNode> Number = new List<Parser<LispNode>>
             {
                 Decimal, // important to parse decimal first as first part is also valid int
                 Integer
-            }.EitherOf()
-                                                select n;
+            }.EitherOf();
 
-        public static Parser<char> Initial = from i in Parser.EitherOf(
-            new List<Parser<char>> {
+        public static Parser<char> Initial = new List<Parser<char>> {
                 Parser.Ascii.Where(c => c >= 'a' && c <= 'z'),
                 Exclamation,
                 Dollar,
@@ -210,23 +216,18 @@ namespace MonadicParserCombinator.Samples.Lisp
                 Tilde,
                 Underscore,
                 Caret
-            })
-                                             select i;
+            }.EitherOf();
 
 
 
-
-        public static Parser<char> Subsequent = from s in Parser.EitherOf(
-            new List<Parser<char>> {
+        public static Parser<char> Subsequent = new List<Parser<char>> {
                 Initial,
                 Plus,
                 Digit,
                 Dot,
                 Plus,
                 Minus
-            }
-        )
-                                                select s;
+            }.EitherOf();
 
 
         public static Parser<IEnumerable<char>> InitSub = from i in Initial
@@ -234,18 +235,15 @@ namespace MonadicParserCombinator.Samples.Lisp
                                                           select i.ReturnIEnumerable()
                                                                   .Concat(ss);
 
-        public static Parser<LispNode> Identifier = from i in Parser.EitherOf(
-            new List<Parser<IEnumerable<char>>> {
+        public static Parser<LispNode> Identifier = from id in new List<Parser<IEnumerable<char>>> {
                 Dot.Then<char, IEnumerable<char>>(d => d.ReturnIEnumerable().ReturnParser()),
                 Plus.Then<char, IEnumerable<char>>(p => p.ReturnIEnumerable().ReturnParser()),
                 Minus.Then<char, IEnumerable<char>>(m => m.ReturnIEnumerable().ReturnParser()),
                 InitSub
-            }
-        )
-                                                    select new LispNode();
+            }.EitherOf()
+                                                    select (LispNode)new IdentifierNode { id = string.Concat(id) };
 
-        public static Parser<LispNode> Datum = from d in Parser.EitherOf(
-            new List<Parser<LispNode>>
+        public static Parser<LispNode> Datum = from d in new List<Parser<LispNode>>
             {
                 Number,
                 String,
@@ -260,9 +258,8 @@ namespace MonadicParserCombinator.Samples.Lisp
                     from rp in RParen
                     select new LispNode(),
                 Identifier
-            }
-        )
-                                               select new LispNode();
+            }.EitherOf()
+                                               select d;
 
         public static Parser<LispNode> LList = from lp in LParen
                                                from ws1 in Whitespaces
@@ -272,7 +269,10 @@ namespace MonadicParserCombinator.Samples.Lisp
                                                            select d2).Many()
                                                from ws2 in Whitespaces
                                                from rp in RParen
-                                               select new LispNode();
+                                               select (LispNode)new LListNode
+                                               {
+                                                   children = d.ReturnIEnumerable().Concat(ds)
+                                               };
 
         public static Parser<LispNode> ExpressionA = from lp in LParen
                                                      from ws1 in Whitespaces
@@ -284,11 +284,18 @@ namespace MonadicParserCombinator.Samples.Lisp
                                                                  select d2).Many()
                                                      from ws2 in Whitespaces
                                                      from rp in RParen
-                                                     select new LispNode();
+                                                     select (LispNode)new ExpressionANode
+                                                     {
+                                                         id = (IdentifierNode)id,
+                                                         ds = d.ReturnIEnumerable().Concat(ds)
+                                                     };
 
         public static Parser<LispNode> ExpressionQ = from sq in SQuote
                                                      from ll in LList
-                                                     select new LispNode();
+                                                     select (LispNode)new ExpressionQNode
+                                                     {
+                                                         llist = (LListNode)ll
+                                                     };
 
         public static Parser<LispNode> Expression = Parser.EitherOf(
             new List<Parser<LispNode>> {
@@ -306,7 +313,10 @@ namespace MonadicParserCombinator.Samples.Lisp
                                                           from e2 in Expression
                                                           select e2).Many()
                                               from rp in RParen
-                                              select new LispNode();
+                                              select (LispNode)new BodyNode
+                                              {
+                                                  expressions = e.ReturnIEnumerable().Concat(es)
+                                              };
 
         public static Parser<LispNode> ParameterName = Identifier;
 
@@ -326,7 +336,12 @@ namespace MonadicParserCombinator.Samples.Lisp
                                                      from b in Body
                                                      from ws5 in Whitespaces
                                                      from rp2 in RParen
-                                                     select new LispNode();
+                                                     select (LispNode)new Definition1Node
+                                                     {
+                                                         identifier = (IdentifierNode)id,
+                                                         parameters = pms,
+                                                         body = (BodyNode)b
+                                                     };
 
         public static Parser<LispNode> Definition2 = from lp in LParen
                                                      from ws1 in Whitespaces
@@ -337,29 +352,32 @@ namespace MonadicParserCombinator.Samples.Lisp
                                                      from d in Datum
                                                      from ws2 in Whitespaces
                                                      from rp in RParen
-                                                     select new LispNode();
+                                                     select (LispNode)new Definition2Node
+                                                     {
+                                                         identifier = (IdentifierNode)id,
+                                                         datum = d
+                                                     };
 
-        public static Parser<LispNode> Definition = Parser.EitherOf(
-            new List<Parser<LispNode>>
+        public static Parser<LispNode> Definition = new List<Parser<LispNode>>
             {
                 Definition1,
                 Definition2
-            }
-        );
+            }.EitherOf();
 
-        public static Parser<LispNode> Form = Parser.EitherOf(
-            new List<Parser<LispNode>> {
+        public static Parser<LispNode> Form = new List<Parser<LispNode>> {
                 Definition,
                 Expression
-            }
-        );
+            }.EitherOf();
 
         public static Parser<LispNode> Program = from f in Form
                                                  from fs in (from s in Spaces
                                                              from f2 in Form
                                                              select f2).Many()
                                                  from ws in Whitespaces
-                                                 select new LispNode();
+                                                 select (LispNode)new ProgramNode
+                                                 {
+                                                     forms = f.ReturnIEnumerable().Concat(fs)
+                                                 };
 
         public static Parser<LispNode> Grammar = Program.EndOfInput();
     }
