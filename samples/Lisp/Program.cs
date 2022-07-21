@@ -11,13 +11,18 @@ namespace MonadicParserCombinator.Samples.Lisp
         {
 
             var parser = new LispParser();
-            var prog = LispParser.Grammar.TryParse("(+ \"hellow, world!\" 1)");
+            //var prog = LispParser.Definition1.EndOfInput().TryParse("(define (f x y z) (+ x y z))");
+            //var prog = LispParser.Definition2.EndOfInput().TryParse("(define x (1 2 3))");
+            var prog = LispParser.Grammar.TryParse("(define (f x y z) (+ x y z)) (define (f x y z) (+ x y z))");
 
             Console.WriteLine(prog.IsSuccess);
 
             Console.WriteLine(prog.Message);
             //Console.WriteLine(prog.Message);
-            //Console.WriteLine(prog.Remainder.Current);
+            if (!prog.IsSuccess)
+            {
+                Console.WriteLine(prog.Remainder.Current);
+            }
             //Console.WriteLine(prog.Remainder.Current);
             //Console.WriteLine(prog.Remainder.Position);
 

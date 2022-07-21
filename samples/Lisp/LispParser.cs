@@ -138,7 +138,7 @@ namespace MonadicParserCombinator.Samples.Lisp
         static Parser<char> AsciiEscape = from s in Parser.MatchString("\\")
                                           select '\\';
 
-        static Parser<char> StringChar = from s in Parser.EitherOf(
+        static Parser<char> StringChar = Parser.EitherOf(
             new List<Parser<char>>
             {
                 Quote,
@@ -153,8 +153,8 @@ namespace MonadicParserCombinator.Samples.Lisp
                         })
                     )
                 )
-            })
-                                         select s;
+            }
+        );
 
         public static Parser<LispNode> String = from aq1 in AsciiQuote
                                                 from sc in StringChar.Many()
@@ -305,6 +305,7 @@ namespace MonadicParserCombinator.Samples.Lisp
                                               from es in (from ws in Spaces
                                                           from e2 in Expression
                                                           select e2).Many()
+                                              from rp in RParen
                                               select new LispNode();
 
         public static Parser<LispNode> ParameterName = Identifier;
