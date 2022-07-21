@@ -254,13 +254,13 @@ namespace MonadicParserCombinator.Samples.Lisp
                     from ws1 in Whitespaces
                     from d in Datum
                     from _ in (from wse in WhitespaceE
-                               from ds in Datum
-                               select new LispNode()).Many()
+                               from d2 in Datum
+                               select d2).Many()
                     from ws2 in Whitespaces
                     from rp in RParen
                     select new LispNode(),
                 Identifier
-    }
+            }
         )
                                                select new LispNode();
 
@@ -268,8 +268,8 @@ namespace MonadicParserCombinator.Samples.Lisp
                                                from ws1 in Whitespaces
                                                from d in Datum
                                                from ds in (from wse in Spaces // problem is to allow tab/nl but ensure a space
-                                                           from ds in Datum
-                                                           select new LispNode()).Many()
+                                                           from d2 in Datum
+                                                           select d2).Many()
                                                from ws2 in Whitespaces
                                                from rp in RParen
                                                select new LispNode();
@@ -279,13 +279,87 @@ namespace MonadicParserCombinator.Samples.Lisp
                                                      from id in Identifier
                                                      from wse1 in Spaces
                                                      from d in Datum
-                                                     from _ in (from wse in Spaces
-                                                                from ds in Datum
-                                                                select new LispNode()).Many()
+                                                     from ds in (from wse in Spaces
+                                                                 from d2 in Datum
+                                                                 select d2).Many()
                                                      from ws2 in Whitespaces
                                                      from rp in RParen
                                                      select new LispNode();
 
-        public static Parser<LispNode> Program = ExpressionA.EndOfInput();
+        public static Parser<LispNode> ExpressionQ = from sq in SQuote
+                                                     from ll in LList
+                                                     select new LispNode();
+
+        public static Parser<LispNode> Expression = Parser.EitherOf(
+            new List<Parser<LispNode>> {
+                ExpressionA,
+                ExpressionQ,
+                Datum
+            }
+        );
+
+
+        public static Parser<LispNode> Body = from lp in LParen
+                                              from ws1 in Whitespaces
+                                              from e in Expression
+                                              from es in (from ws in Spaces
+                                                          from e2 in Expression
+                                                          select e2).Many()
+                                              select new LispNode();
+
+        public static Parser<LispNode> ParameterName = Identifier;
+
+        public static Parser<LispNode> Definition1 = from lp1 in LParen
+                                                     from ws1 in Whitespaces
+                                                     from def in Define
+                                                     from s1 in Spaces
+                                                     from lp2 in LParen
+                                                     from ws2 in Whitespaces
+                                                     from id in Identifier
+                                                     from pms in (from s in Spaces
+                                                                  from pm in ParameterName
+                                                                  select pm).ManyOne()
+                                                     from ws3 in Whitespaces
+                                                     from rp1 in RParen
+                                                     from ws4 in Whitespaces
+                                                     from b in Body
+                                                     from ws5 in Whitespaces
+                                                     from rp2 in RParen
+                                                     select new LispNode();
+
+        public static Parser<LispNode> Definition2 = from lp in LParen
+                                                     from ws1 in Whitespaces
+                                                     from def in Define
+                                                     from s1 in Spaces
+                                                     from id in Identifier
+                                                     from s2 in Spaces
+                                                     from d in Datum
+                                                     from ws2 in Whitespaces
+                                                     from rp in RParen
+                                                     select new LispNode();
+
+        public static Parser<LispNode> Definition = Parser.EitherOf(
+            new List<Parser<LispNode>>
+            {
+                Definition1,
+                Definition2
+            }
+        );
+
+        public static Parser<LispNode> Form = Parser.EitherOf(
+            new List<Parser<LispNode>> {
+                Definition,
+                Expression
+            }
+        );
+
+        public static Parser<LispNode> Program = from f in Form
+                                                 from fs in (from s in Spaces
+                                                             from f2 in Form
+                                                             select f2).Many()
+                                                 from ws in Whitespaces
+                                                 select new LispNode();
+
+        public static Parser<LispNode> Grammar = Program.EndOfInput();
     }
 }

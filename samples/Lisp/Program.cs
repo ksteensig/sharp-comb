@@ -11,7 +11,7 @@ namespace MonadicParserCombinator.Samples.Lisp
         {
 
             var parser = new LispParser();
-            var prog = LispParser.Program.TryParse("(+ 1 1)");
+            var prog = LispParser.Grammar.TryParse("(+ \"hellow, world!\" 1)");
 
             Console.WriteLine(prog.IsSuccess);
 
