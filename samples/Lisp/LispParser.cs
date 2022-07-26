@@ -5,6 +5,8 @@ using System.Text.RegularExpressions;
 using MonadicParserCombinator;
 
 
+// purpose is to implement: https://www.scheme.com/tspl2d/grammar.html
+// still a bit of work, but it has come a long way
 namespace MonadicParserCombinator.Samples.Lisp
 {
     public partial class LispParser
